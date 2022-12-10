@@ -1,0 +1,46 @@
+local placeId = game.PlaceId;
+if placeId ~= 292439477 and placeId ~= 299659045 then
+	return;
+end
+
+local runService = game:GetService("RunService");
+local replicatedFirst = game:GetService("ReplicatedFirst");
+
+local container
+replicatedFirst.ChildAdded:Connect(function(instance)
+	if instance:IsA("Actor") and not container then
+		replicatedFirst.ChildAdded:Wait();
+
+		container = Instance.new("Folder");
+		container.Name = instance.Name;
+		container.Parent = instance.Parent;
+
+		for _, child in next, instance:GetChildren() do
+			child.Parent = container;
+		end
+
+		instance.Parent = nil;
+	end
+end);
+
+local first = false
+local old;
+old = hookmetamethod(runService.Heartbeat, "__index", function(_, index)
+	if index == "ConnectParallel" and not checkcaller() then
+		index = "Connect";
+	elseif index == "Connect" and not checkcaller() and not first then
+		first = true
+		return function() end
+	end
+	return old(_, index);
+end);
+
+debug.setmetatable(getrenv().shared, {
+	__newindex = function(_, index, value)
+		if index == "close" and not checkcaller() then
+			value = function() end;
+		end
+		return rawset(_, index, value);
+	end
+});
+getgenv().SodiumPatch = true
